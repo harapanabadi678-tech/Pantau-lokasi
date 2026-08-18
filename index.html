@@ -51,11 +51,13 @@
         statusDiv.innerHTML = "🔄 Membaca GPS...<br><small style='color: #6c757d;'>Silakan klik 'Izinkan' pada pop-up lokasi browser Anda.</small>";
         
         // Meminta lokasi dengan pengaturan akurasi paling tinggi
+                // Memaksa browser menyalakan GPS fisik dengan akurasi tertinggi dan TANPA CACHE
         navigator.geolocation.getCurrentPosition(kirimKeWebhook, tanganiError, {
-            enableHighAccuracy: true,
-            timeout: 10000,
-            maximumAge: 0
+            enableHighAccuracy: true,  // Wajib gunakan satelit GPS fisik
+            timeout: 15000,            // Menunggu sinyal GPS mengunci hingga 15 detik
+            maximumAge: 0              // ANGKA 0 ARTINYA: Dilarang keras memakai lokasi lama/cache!
         });
+
     }
 
         function kirimKeWebhook(position) {
