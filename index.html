@@ -1,42 +1,46 @@
+
 <!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cek Lokasi Perangkat</title>
+    <!-- Memanggil CSS Peta Alternatif Leaflet JS -->
+    <link rel="stylesheet" href="https://unpkg.com" />
     <style>
-        body { font-family: Arial, sans-serif; text-align: center; padding: 20px; background-color: #f4f4f4; }
-        .box { background: white; padding: 20px; border-radius: 10px; box-shadow: 0px 4px 10px rgba(0,0,0,0.1); max-width: 400px; margin: auto; }
-        button { padding: 15px 25px; font-size: 16px; background-color: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; width: 100%; }
-        #peta { margin-top: 20px; display: none; }
-        iframe { width: 100%; height: 350px; border: 0; border-radius: 8px; }
+        body { font-family: Arial, sans-serif; text-align: center; padding: 20px; background-color: #f4f4f4; margin: 0; }
+        .box { background: white; padding: 20px; border-radius: 10px; box-shadow: 0px 4px 10px rgba(0,0,0,0.1); max-width: 400px; margin: 20px auto; }
+        button { padding: 15px 25px; font-size: 16px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; width: 100%; }
+        #wadah-peta { width: 100%; height: 350px; margin-top: 20px; border-radius: 8px; border: 1px solid #ccc; display: none; }
         #status { margin-top: 15px; font-size: 14px; color: #333; line-height: 1.5; }
     </style>
 </head>
 <body>
 
 <div class="box">
-    <h2>Aplikasi Cek GPS Perangkat</h2>
-    <p style="color: #666; font-size: 14px;">Klik tombol di bawah untuk mengaktifkan peta navigasi sesuai titik GPS HP Anda.</p>
+    <h2>Aplikasi GPS Perangkat</h2>
+    <p style="color: #666; font-size: 14px;">Klik tombol di bawah untuk menampilkan peta lokasi Anda menggunakan sistem Leaflet Map.</p>
     
-    <button onclick="mintaLokasi()">Buka Peta Lokasi Saya</button>
+    <button onclick="mintaLokasi()">Buka Peta Lokasi</button>
     
     <p id="status">Status: Menunggu tombol diklik...</p>
     
-    <div id="peta">
-        <h3 style="text-align: left; font-size: 16px;">Lokasi Anda Saat Ini:</h3>
-        <div id="wadah-peta"></div>
-    </div>
+    <!-- Tempat menampilkan peta alternatif -->
+    <div id="wadah-peta"></div>
 </div>
 
+<!-- Memanggil Script Peta Alternatif Leaflet JS -->
+<script src="https://unpkg.com"></script>
 <script>
+    let petaObjek = null;
+
     function mintaLokasi() {
         const status = document.getElementById('status');
         if (!navigator.geolocation) {
-            status.innerHTML = "<span style='color: red;'>Browser HP Anda memblokir fitur GPS.</span>";
+            status.innerHTML = "<span style='color: red;'>Browser HP Anda tidak mendukung GPS.</span>";
             return;
         }
-        status.innerHTML = "<b>Sedang memproses...</b><br>Silakan klik 'Izinkan/Allow' jika muncul permintaan akses GPS di layar.";
+        status.innerHTML = "<b>Memproses GPS Perangkat...</b><br>Pastikan Anda mengklik 'Izinkan' jika muncul pop-up izin lokasi.";
         navigator.geolocation.getCurrentPosition(tampilkanLokasi, tanganiError);
     }
 
@@ -45,23 +49,37 @@
         const lng = position.coords.longitude;
         
         document.getElementById('status').innerHTML = `
-            <span style='color: green;'><b>Akses Diizinkan!</b></span><br>
-            <b>Latitude:</b> ${lat}<br>
-            <b>Longitude:</b> ${lng}
+            <span style='color: green;'><b>Akses Sukses!</b></span><br>
+            <b>Lat:</b> ${lat} | <b>Lng:</b> ${lng}
         `;
 
-        // Format link embed baru yang jauh lebih kompatibel untuk browser HP
-        const wadahPeta = document.getElementById('wadah-peta');
-        wadahPeta.innerHTML = `<iframe src="https://google.com{lat},${lng}&hl=id&z=16&output=embed"></iframe>`;
-        document.getElementById('peta').style.display = 'block';
+        // Menampilkan area peta
+        const mapDiv = document.getElementById('wadah-peta');
+        mapDiv.style.display = 'block';
+
+        // Membuat dan merender peta Leaflet (OpenStreetMap) secara otomatis
+        if (petaObjek !== null) {
+            petaObjek.remove(); // Hapus peta lama jika ada pembaruan posisi
+        }
+        
+        petaObjek = L.map('wadah-peta').setView([lat, lng], 16);
+        
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(petaObjek);
+
+        // Menaruh pin merah di koordinat GPS HP Anda
+        L.marker([lat, lng]).addTo(petaObjek)
+            .bindPopup('Anda berada di sekitar area ini.')
+            .openPopup();
     }
 
     function tanganiError(error) {
         const status = document.getElementById('status');
         if (error.code === error.PERMISSION_DENIED) {
-            status.innerHTML = "<span style='color: red;'><b>Gagal: Akses Ditolak.</b><br>Anda harus memilih 'Izinkan' saat browser meminta akses lokasi agar peta bisa terbuka.</span>";
+            status.innerHTML = "<span style='color: red;'><b>Gagal: Izin Ditolak.</b><br>Ubah pengaturan browser HP Anda untuk mengizinkan akses lokasi website ini.</span>";
         } else {
-            status.innerHTML = "<span style='color: red;'><b>Gagal: Sinyal Jelek.</b><br>Perangkat gagal mengunci koordinat GPS. Pastikan setelan GPS HP Anda aktif.</span>";
+            status.innerHTML = "<span style='color: red;'><b>Gagal: Sensor GPS Mati.</b><br>Nyalakan fitur Lokasi/GPS di menu bar atas HP Anda terlebih dahulu.</span>";
         }
     }
 </script>
