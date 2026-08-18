@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cek Lokasi Perangkat</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; padding: 20px; }
+        button { padding: 15px 25px; font-size: 16px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        #peta { margin-top: 20px; display: none; }
+        iframe { width: 100%; height: 300px; border: 0; border-radius: 8px; }
+    </style>
+</head>
+<body>
+
+    <h2>Aplikasi Cek GPS Perangkat</h2>
+    <p>Klik tombol di bawah untuk melihat koordinat GPS perangkat Anda secara real-time.</p>
+    
+    <button onclick="mintaLokasi()">Dapatkan Lokasi Saya</button>
+    
+    <p id="status"></p>
+    
+    <!-- Tempat menampilkan peta Google Maps -->
+    <div id="peta">
+        <h3>Lokasi Anda di Peta:</h3>
+        <div id="wadah-peta"></div>
+    </div>
+
+    <script>
+        function mintaLokasi() {
+            const status = document.getElementById('status');
+            const peta = document.getElementById('peta');
+
+            if (!navigator.geolocation) {
+                status.textContent = "Browser HP Anda tidak mendukung GPS.";
+                return;
+            }
+
+            status.textContent = "Sedang meminta izin akses GPS... Silakan klik 'Izinkan/Allow' pada pop-up browser.";
+
+            navigator.geolocation.getCurrentPosition(tampilkanLokasi, tanganiError);
+        }
+
+        function tampilkanLokasi(position) {
+            const lat = position.coords.latitude;
+            const lng = position.coords.longitude;
+            
+            document.getElementById('status').innerHTML = `
+                <b>Lokasi Berhasil Didapat!</b><br>
+                Latitude (Lintang): ${lat}<br>
+                Longitude (Bujur): ${lng}
+            `;
+
+            // Menampilkan Google Maps berdasarkan koordinat perangkat yang mengakses
+            const wadahPeta = document.getElementById('wadah-peta');
+            wadahPeta.innerHTML = `<iframe src="https://google.com{lat},${lng}&z=15&output=embed"></iframe>`;
+            document.getElementById('peta').style.display = 'block';
+        }
+
+        function tanganiError(error) {
+            const status = document.getElementById('status');
+            if (error.code === error.PERMISSION_DENIED) {
+                status.textContent = "Akses ditolak. Anda harus memberikan izin lokasi agar aplikasi bisa membaca GPS perangkat.";
+            } else {
+                status.textContent = "Gagal mengambil lokasi karena gangguan sinyal/GPS mati.";
+            }
+        }
+    </script>
+</body>
+</html>
